@@ -146,13 +146,13 @@ LAYER_PARSERS = {
     "layer3_seasonality": parse_layer3_seasonality,
 }
 
-# Map curation data filenames to layer keys
+# Map curation data filenames to layer keys (supports both _test and _50k suffixes)
 CURATION_FILE_TO_LAYER = {
-    "curation_data_layer0_signal_50k.jsonl": "layer0_signal",
-    "curation_data_layer1_delta.jsonl": "layer1_delta",
-    "curation_data_layer1_actual.jsonl": "layer1_actual",
-    "curation_data_layer1_intent.jsonl": "layer1_intent",
-    "curation_data_layer2_temporal.jsonl": "layer2_temporal",
-    "curation_data_layer3_persona.jsonl": "layer3_persona",
-    "curation_data_layer3_seasonality.jsonl": "layer3_seasonality",
+    "curation_data_layer0_signal_test.jsonl": "layer0_signal",
+    "curation_data_layer1_delta_test.jsonl": "layer1_delta",
+    "curation_data_layer1_actual_test.jsonl": "layer1_actual",
+    "curation_data_layer1_intent_test.jsonl": "layer1_intent",
+    "curation_data_layer2_temporal_test.jsonl": "layer2_temporal",
+    "curation_data_layer3_persona_test.jsonl": "layer3_persona",
+    "curation_data_layer3_seasonality_test.jsonl": "layer3_seasonality",
 }

@@ -17,13 +17,13 @@ class EdgeRazorTrainConfigForMaiProfile:
     teacher_path  = "Qwen/Qwen3-1.7B"
     student_path  = "Qwen/Qwen3-1.7B"
     dataset_path  = [
-        f"{DATA_ROOT}/curation_data_layer0_signal_50k.jsonl",    # 64k samples
-        f"{DATA_ROOT}/curation_data_layer1_delta.jsonl",         # 8.7k
-        f"{DATA_ROOT}/curation_data_layer1_actual.jsonl",        # 8.7k
-        f"{DATA_ROOT}/curation_data_layer1_intent.jsonl",        # 8.7k
-        f"{DATA_ROOT}/curation_data_layer2_temporal.jsonl",      # 8.7k
-        f"{DATA_ROOT}/curation_data_layer3_persona.jsonl",       # 8.7k
-        f"{DATA_ROOT}/curation_data_layer3_seasonality.jsonl",   # 8.7k
+        f"{DATA_ROOT}/curation_data_layer0_signal_train.jsonl",    # ~45k samples
+        f"{DATA_ROOT}/curation_data_layer1_delta_train.jsonl",     # ~45k
+        f"{DATA_ROOT}/curation_data_layer1_actual_train.jsonl",    # ~45k
+        f"{DATA_ROOT}/curation_data_layer1_intent_train.jsonl",    # ~45k
+        f"{DATA_ROOT}/curation_data_layer2_temporal_train.jsonl",  # ~45k
+        f"{DATA_ROOT}/curation_data_layer3_persona_train.jsonl",   # ~45k
+        f"{DATA_ROOT}/curation_data_layer3_seasonality_train.jsonl", # ~45k
     ]
     output_dir    = f"{CODE_ROOT}/train_maiprofile"
     final_model   = f"{output_dir}/final_model"
