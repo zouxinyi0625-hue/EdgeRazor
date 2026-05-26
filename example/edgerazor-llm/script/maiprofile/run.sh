@@ -65,10 +65,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TRAIN_YAML_PATH="${SCRIPT_DIR}/${TRAIN_YAML_DIR}/${TRAIN_YAML}.yaml"
 
 CODE_ROOT="${PATH_PREFIX}/EdgeRazor"
+SRC_ROOT="${CODE_ROOT}/example/edgerazor-llm/src"
+TEMPLATE_ROOT="${CODE_ROOT}/example/edgerazor-llm/template"
 TEMPLATE_NAME="${MODEL_NAME}-${QUANT_CONFIG}-Template"
-TEMPLATE_PATH="${CODE_ROOT}/template/${MODEL_NAME}/${TEMPLATE_NAME}"
+TEMPLATE_PATH="${TEMPLATE_ROOT}/${MODEL_NAME}/${TEMPLATE_NAME}"
 
-TRAIN_ROOT="${CODE_ROOT}/${TRAIN_VERSION}"
+TRAIN_ROOT="${CODE_ROOT}/train_maiprofile"
 FINAL_MODEL="${TRAIN_ROOT}/final_model"
 EVAL_MODEL="${TRAIN_ROOT}/${MODEL_NAME}"
 
@@ -76,8 +78,8 @@ TRAIN_LOG_DIR="${TRAIN_ROOT}/logs"
 TENSORBOARD_DIR="${TRAIN_ROOT}/tensorboard"
 RESULT_DIR="${TRAIN_ROOT}/results"
 
-QUANT_CONFIG_PATH="${CODE_ROOT}/src/train.yaml"
-CONVERT_SCRIPT="${CODE_ROOT}/src/convert/convert_qweight.py"
+QUANT_CONFIG_PATH="${SRC_ROOT}/train.yaml"
+CONVERT_SCRIPT="${SRC_ROOT}/convert/convert_qweight.py"
 
 export PATH="${HOME}/.conda/envs/edgerazor/bin:${PATH}"
 
@@ -88,12 +90,12 @@ export PATH="${HOME}/.conda/envs/edgerazor/bin:${PATH}"
 cp "${TRAIN_YAML_PATH}" "${QUANT_CONFIG_PATH}"
 
 # Use MaiProfile config class
-sed -i.bak "s/= \"exp_for_sed\"/= \"${RUN_NAME}\"/" "${CODE_ROOT}/src/config_maiprofile.py"
-sed -i.bak "s/config = EdgeRazorTrainConfigFor[^(]*()/config = EdgeRazorTrainConfigForMaiProfile()/" "${CODE_ROOT}/src/main.py"
+sed -i.bak "s/= \"exp_for_sed\"/= \"${RUN_NAME}\"/" "${SRC_ROOT}/config_maiprofile.py"
+sed -i.bak "s/config = EdgeRazorTrainConfigFor[^(]*()/config = EdgeRazorTrainConfigForMaiProfile()/" "${SRC_ROOT}/main.py"
 
 # Ensure main.py imports config_maiprofile
-if ! grep -q "from config_maiprofile import" "${CODE_ROOT}/src/main.py"; then
-    sed -i.bak "1i from config_maiprofile import EdgeRazorTrainConfigForMaiProfile" "${CODE_ROOT}/src/main.py"
+if ! grep -q "from config_maiprofile import" "${SRC_ROOT}/main.py"; then
+    sed -i.bak "1i from config_maiprofile import EdgeRazorTrainConfigForMaiProfile" "${SRC_ROOT}/main.py"
 fi
 
 # ============================================================================
@@ -124,7 +126,7 @@ echo "[Step 2/3] Starting distributed training..."
 timestamp=$(date +"%Y-%m-%d_%H-%M-%S")
 TRAINING_LOG="${TRAIN_LOG_DIR}/train_${timestamp}.log"
 time {
-    deepspeed --num_gpus=8 "${CODE_ROOT}/src/main.py"
+    deepspeed --num_gpus=8 "${SRC_ROOT}/main.py"
 } 2>&1 | tee "${TRAINING_LOG}"
 echo "  ✓ Training completed"
 echo ""

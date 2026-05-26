@@ -4,6 +4,7 @@ import os
 # Environment paths
 PATH_PREFIX = "/path/to/your/environment"  # Change this to your actual path prefix
 CODE_ROOT = f"{PATH_PREFIX}/EdgeRazor"
+SRC_ROOT = f"{CODE_ROOT}/example/edgerazor-llm/src"
 DATA_ROOT = f"{CODE_ROOT}/data/maiprofile"
 
 # Create necessary directories if they don't exist
@@ -11,8 +12,8 @@ os.makedirs(DATA_ROOT, exist_ok=True)
 
 
 class EdgeRazorTrainConfigForMaiProfile:
-    config_path   = f"{CODE_ROOT}/src/train.yaml"
-    ds_path       = f"{CODE_ROOT}/src/ds_z3_config_qwen3.json"
+    config_path   = f"{SRC_ROOT}/train.yaml"
+    ds_path       = f"{SRC_ROOT}/ds_z3_config_qwen3.json"
     teacher_path  = "Qwen/Qwen3-1.7B"
     student_path  = "Qwen/Qwen3-1.7B"
     dataset_path  = [
