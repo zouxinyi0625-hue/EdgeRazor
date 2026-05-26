@@ -151,6 +151,7 @@ if __name__ == "__main__":
         dataset_path=config.dataset_path,
         tokenizer=tokenizer,
         max_seq_len=config.max_seq_len,
+        add_system_prompt=getattr(config, 'add_system_prompt', True),
     )
 
     data_collator = DataCollatorForSeq2Seq(

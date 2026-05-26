@@ -27,6 +27,9 @@ class EdgeRazorTrainConfigForMaiProfile:
     output_dir    = f"{CODE_ROOT}/train_maiprofile"
     final_model   = f"{output_dir}/final_model"
 
+    # Data already contains system prompts — do not add another
+    add_system_prompt = False
+
     # Training
     max_seq_len   = 4096   # MaiProfile prompts are long (system prompts ~1000 tokens)
     epoch         = 3
