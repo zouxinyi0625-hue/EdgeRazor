@@ -44,7 +44,7 @@ def load_model(model_path: str, trust_remote_code: bool = False):
         torch_dtype=torch.bfloat16,
         device_map="auto",
         trust_remote_code=trust_remote_code,
-        attn_implementation="flash_attention_2",
+        attn_implementation="sdpa",
     )
     model.eval()
     return model, tokenizer
