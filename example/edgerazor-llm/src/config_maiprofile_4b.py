@@ -2,7 +2,7 @@
 import os
 
 # Environment paths
-PATH_PREFIX = "/path/to/your/environment"  # Change this to your actual path prefix
+PATH_PREFIX = "/scratch/azureml/cr/j/ec2ababe2e7140d4b2703f49a4839996/exe/wd"
 CODE_ROOT = f"{PATH_PREFIX}/EdgeRazor"
 SRC_ROOT = f"{CODE_ROOT}/example/edgerazor-llm/src"
 DATA_ROOT = f"{CODE_ROOT}/data/maiprofile"

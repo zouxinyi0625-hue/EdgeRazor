@@ -30,7 +30,7 @@ export TOKENIZERS_PARALLELISM=false
 # User Configuration
 # ============================================================================
 
-PATH_PREFIX="/path/to/your/environment"
+PATH_PREFIX="/scratch/azureml/cr/j/ec2ababe2e7140d4b2703f49a4839996/exe/wd"
 MODEL_NAME="Qwen/Qwen3-1.7B"
 
 # Select quantization config based on argument
