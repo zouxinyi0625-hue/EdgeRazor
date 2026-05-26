@@ -72,6 +72,7 @@ class ReasoningDataset(Dataset):
         else:
             raw_dataset = load_dataset(dataset_path)
         print(f"Dataset loaded: {dataset_path}, total samples: {len(raw_dataset[split])}")
+        self.dataset = raw_dataset[split]
 
         if limit_num_samples is not None and limit_num_samples > 0:
             original_size = len(self.dataset)
