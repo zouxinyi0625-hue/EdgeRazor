@@ -3,20 +3,26 @@
 inference_maiprofile.py — Run quantized Qwen3-1.7B inference on MaiProfile
 curation data and produce output JSONL files compatible with run_evaluation.py.
 
-Usage:
+Usage (single GPU):
     python inference_maiprofile.py \
-        --model-path /path/to/checkpoint_or_exported_model \
+        --model-path Qwen/Qwen3-1.7B \
         --data-dir /path/to/curation_data/ \
         --output-root /path/to/output/ \
-        --date-str 20260101 \
-        [--max-new-tokens 2048] \
-        [--batch-size 4] \
-        [--trust-remote-code]
+        --layer layer1_delta
+
+Usage (multi-GPU data parallel):
+    python inference_maiprofile.py \
+        --model-path Qwen/Qwen3-1.7B \
+        --data-dir /path/to/curation_data/ \
+        --output-root /path/to/output/ \
+        --layer layer1_delta \
+        --num-gpus 8
 """
 
 import argparse
 import json
 import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -101,6 +107,57 @@ def detect_date_str(data_dir: Path) -> str:
     return "20260101"
 
 
+def launch_multi_gpu(args):
+    """Spawn one process per GPU, each handles a shard of data."""
+    processes = []
+    for gpu_id in range(args.num_gpus):
+        cmd = [
+            sys.executable, __file__,
+            "--model-path", args.model_path,
+            "--data-dir", args.data_dir,
+            "--output-root", args.output_root,
+            "--layer", args.layer,
+            "--max-new-tokens", str(args.max_new_tokens),
+            "--gpu-id", str(gpu_id),
+            "--num-workers", str(args.num_gpus),
+        ]
+        if args.date_str:
+            cmd.extend(["--date-str", args.date_str])
+        if args.trust_remote_code:
+            cmd.append("--trust-remote-code")
+        p = subprocess.Popen(cmd)
+        processes.append(p)
+        print(f"[Launcher] Started worker {gpu_id} (pid={p.pid})")
+
+    # Wait for all workers
+    for p in processes:
+        p.wait()
+
+    # Merge shard outputs
+    print("[Launcher] All workers finished. Merging outputs...")
+    merge_shards(args)
+    print("[Launcher] Done.")
+
+
+def merge_shards(args):
+    """Merge per-worker shard files into a single output file."""
+    data_dir = Path(args.data_dir)
+    date_str = args.date_str or detect_date_str(data_dir)
+    output_dir = Path(args.output_root) / date_str
+    layer = args.layer
+
+    final_path = output_dir / f"{layer}.jsonl"
+    with open(final_path, "w", encoding="utf-8") as out_f:
+        for gpu_id in range(args.num_gpus):
+            shard_path = output_dir / f"{layer}_shard{gpu_id}.jsonl"
+            if shard_path.exists():
+                with open(shard_path, "r", encoding="utf-8") as sf:
+                    for line in sf:
+                        out_f.write(line)
+                shard_path.unlink()  # Clean up shard file
+    print(f"  ✓ Merged → {final_path}")
+
+
 def run_inference(
     model,
     tokenizer,
@@ -109,11 +166,13 @@ def run_inference(
     layer: str,
     date_str: str | None = None,
     max_new_tokens: int = 2048,
+    worker_id: int = 0,
+    num_workers: int = 1,
 ):
     """Run inference on a single layer's test data and write output."""
     if date_str is None:
         date_str = detect_date_str(data_dir)
-        print(f"[INFO] Auto-detected date_str: {date_str}")
+        print(f"[Worker {worker_id}] Auto-detected date_str: {date_str}")
 
     output_dir = output_root / date_str
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -129,10 +188,19 @@ def run_inference(
         print(f"[ERROR] No data file found for {layer} in {data_dir}")
         return
 
-    print(f"[INFO] Processing {filename} → {layer}")
+    print(f"[Worker {worker_id}] Processing {filename} → {layer}")
     records = read_curation_data(str(filepath))
     parser = LAYER_PARSERS[layer]
-    output_path = output_dir / f"{layer}.jsonl"
+
+    # Shard data across workers
+    records = [r for i, r in enumerate(records) if i % num_workers == worker_id]
+    print(f"[Worker {worker_id}] Assigned {len(records)} records")
+
+    # Write to shard file if multi-GPU, else directly to final
+    if num_workers > 1:
+        output_path = output_dir / f"{layer}_shard{worker_id}.jsonl"
+    else:
+        output_path = output_dir / f"{layer}.jsonl"
 
     with open(output_path, "w", encoding="utf-8") as out_f:
         for i, record in enumerate(records):
@@ -182,22 +250,36 @@ def main():
     parser.add_argument("--date-str", default=None, help="Date string for output folder (YYYYMMDD). Auto-detected from data if omitted.")
     parser.add_argument("--max-new-tokens", type=int, default=2048, help="Max new tokens to generate")
     parser.add_argument("--trust-remote-code", action="store_true", help="Trust remote code for model loading")
+    parser.add_argument("--num-gpus", type=int, default=1, help="Number of GPUs for data parallel inference")
+    parser.add_argument("--gpu-id", type=int, default=None, help="(Internal) GPU worker ID, used by multi-GPU launcher")
+    parser.add_argument("--num-workers", type=int, default=None, help="(Internal) Total workers, used by multi-GPU launcher")
     args = parser.parse_args()
 
-    print(f"Loading model from {args.model_path}...")
-    model, tokenizer = load_model(args.model_path, args.trust_remote_code)
-    print("Model loaded.")
+    if args.num_gpus > 1 and args.gpu_id is None:
+        # Launcher mode: spawn one process per GPU
+        launch_multi_gpu(args)
+    else:
+        # Single GPU or worker mode
+        gpu_id = args.gpu_id or 0
+        num_workers = args.num_workers or 1
+        os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_id)
 
-    run_inference(
-        model=model,
-        tokenizer=tokenizer,
-        data_dir=Path(args.data_dir),
-        output_root=Path(args.output_root),
-        layer=args.layer,
-        date_str=args.date_str,
-        max_new_tokens=args.max_new_tokens,
-    )
-    print("Done.")
+        print(f"[Worker {gpu_id}/{num_workers}] Loading model from {args.model_path}...")
+        model, tokenizer = load_model(args.model_path, args.trust_remote_code)
+        print(f"[Worker {gpu_id}/{num_workers}] Model loaded.")
+
+        run_inference(
+            model=model,
+            tokenizer=tokenizer,
+            data_dir=Path(args.data_dir),
+            output_root=Path(args.output_root),
+            layer=args.layer,
+            date_str=args.date_str,
+            max_new_tokens=args.max_new_tokens,
+            worker_id=gpu_id,
+            num_workers=num_workers,
+        )
+        print(f"[Worker {gpu_id}/{num_workers}] Done.")
 
 
 if __name__ == "__main__":
