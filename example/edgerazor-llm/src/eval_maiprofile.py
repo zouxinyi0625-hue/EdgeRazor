@@ -32,9 +32,10 @@ def run_inference_step(args):
         "--model-path", args.model_path,
         "--data-dir", args.data_dir,
         "--output-root", args.output_root,
-        "--date-str", args.date_str,
         "--max-new-tokens", str(args.max_new_tokens),
     ]
+    if args.date_str:
+        cmd.extend(["--date-str", args.date_str])
     if args.trust_remote_code:
         cmd.append("--trust-remote-code")
 
@@ -130,7 +131,7 @@ def main():
     parser.add_argument("--output-root", required=True, help="Output directory for inference + eval")
     parser.add_argument("--maiprofile-root", required=True,
                         help="Path to MaiProfile/maiprofilev3dev (containing run_evaluation.py)")
-    parser.add_argument("--date-str", default="20260101", help="Date string (YYYYMMDD)")
+    parser.add_argument("--date-str", default=None, help="Date string (YYYYMMDD). Auto-detected from data if omitted.")
     parser.add_argument("--max-new-tokens", type=int, default=2048)
     parser.add_argument("--trust-remote-code", action="store_true")
     parser.add_argument("--eval-flags", default="--eval-layer1-delta-topics --eval-layer3-seasonality",

@@ -86,15 +86,34 @@ def generate_response(
     return tokenizer.decode(generated, skip_special_tokens=True)
 
 
+def detect_date_str(data_dir: Path) -> str:
+    """Auto-detect date_str from the first record's metadata in any curation file."""
+    for filename in CURATION_FILE_TO_LAYER:
+        filepath = data_dir / filename
+        if filepath.exists():
+            with open(filepath, "r", encoding="utf-8") as f:
+                line = f.readline().strip()
+                if line:
+                    record = json.loads(line)
+                    date = record.get("metadata", {}).get("date")
+                    if date:
+                        return date
+    return "20260101"
+
+
 def run_inference(
     model,
     tokenizer,
     data_dir: Path,
     output_root: Path,
-    date_str: str,
+    date_str: str | None = None,
     max_new_tokens: int = 2048,
 ):
     """Run inference on all curation data files and write outputs."""
+    if date_str is None:
+        date_str = detect_date_str(data_dir)
+        print(f"[INFO] Auto-detected date_str: {date_str}")
+
     output_dir = output_root / date_str
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -151,7 +170,7 @@ def main():
     parser.add_argument("--model-path", required=True, help="Path to quantized model checkpoint")
     parser.add_argument("--data-dir", required=True, help="Directory containing curation_data_*.jsonl files")
     parser.add_argument("--output-root", required=True, help="Output root directory")
-    parser.add_argument("--date-str", default="20260101", help="Date string for output folder (YYYYMMDD)")
+    parser.add_argument("--date-str", default=None, help="Date string for output folder (YYYYMMDD). Auto-detected from data if omitted.")
     parser.add_argument("--max-new-tokens", type=int, default=2048, help="Max new tokens to generate")
     parser.add_argument("--trust-remote-code", action="store_true", help="Trust remote code for model loading")
     args = parser.parse_args()
