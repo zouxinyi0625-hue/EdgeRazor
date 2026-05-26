@@ -27,8 +27,8 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-# Add src to path for evaluation package
-sys.path.insert(0, str(Path(__file__).parent))
+# Add src/ to path so "evaluation" package is importable
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from evaluation.llm_client import build_client, DEFAULT_MODEL
 from evaluation.io_utils import read_jsonl, write_json
