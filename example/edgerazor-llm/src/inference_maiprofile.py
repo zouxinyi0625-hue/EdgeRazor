@@ -95,6 +95,37 @@ def generate_response(
     return tokenizer.decode(generated, skip_special_tokens=True)
 
 
+def generate_responses_batch(
+    model, tokenizer, messages_batch: list[list[dict]], max_new_tokens: int = 2048
+) -> list[str]:
+    """Generate model responses for a batch of conversations."""
+    texts = [
+        tokenizer.apply_chat_template(
+            msgs, tokenize=False, add_generation_prompt=True,
+            enable_thinking=False,
+        )
+        for msgs in messages_batch
+    ]
+    tokenizer.padding_side = "left"
+    if tokenizer.pad_token_id is None:
+        tokenizer.pad_token_id = tokenizer.eos_token_id
+    inputs = tokenizer(texts, return_tensors="pt", padding=True, truncation=True).to(model.device)
+    input_len = inputs["input_ids"].shape[1]
+    with torch.no_grad():
+        outputs = model.generate(
+            **inputs,
+            max_new_tokens=max_new_tokens,
+            do_sample=False,
+            temperature=1.0,
+            top_p=1.0,
+        )
+    results = []
+    for i in range(len(texts)):
+        generated = outputs[i][input_len:]
+        results.append(tokenizer.decode(generated, skip_special_tokens=True))
+    return results
+
+
 def detect_date_str(data_dir: Path) -> str:
     """Auto-detect date_str from the first record's metadata in any curation file."""
     for filename in CURATION_FILE_TO_LAYER:
@@ -121,6 +152,7 @@ def launch_multi_gpu(args):
             "--output-root", args.output_root,
             "--layer", args.layer,
             "--max-new-tokens", str(args.max_new_tokens),
+            "--batch-size", str(args.batch_size),
             "--gpu-id", str(gpu_id),
             "--num-workers", str(args.num_gpus),
         ]
@@ -174,6 +206,7 @@ def run_inference(
     max_samples: int = 0,
     worker_id: int = 0,
     num_workers: int = 1,
+    batch_size: int = 8,
 ):
     """Run inference on a single layer's test data and write output."""
     if date_str is None:
@@ -202,7 +235,7 @@ def run_inference(
     if max_samples > 0:
         records = records[:max_samples]
     records = [r for i, r in enumerate(records) if i % num_workers == worker_id]
-    print(f"[Worker {worker_id}] Assigned {len(records)} records")
+    print(f"[Worker {worker_id}] Assigned {len(records)} records (batch_size={batch_size})")
 
     # Write to shard file if multi-GPU, else directly to final
     if num_workers > 1:
@@ -212,35 +245,44 @@ def run_inference(
 
     parse_failures = 0
     with open(output_path, "w", encoding="utf-8") as out_f:
-        for i, record in tqdm(enumerate(records), total=len(records),
-                              desc=f"[Worker {worker_id}]", position=worker_id):
-            messages = extract_prompt_messages(record)
-            if not messages:
+        for batch_start in tqdm(range(0, len(records), batch_size),
+                                desc=f"[Worker {worker_id}]", position=worker_id):
+            batch_records = records[batch_start:batch_start + batch_size]
+
+            # Prepare batch
+            batch_messages = []
+            batch_meta = []
+            for i_abs, record in enumerate(batch_records, start=batch_start):
+                messages = extract_prompt_messages(record)
+                if not messages:
+                    continue
+                metadata = record.get("metadata", {})
+                user_id = metadata.get("user_id", f"user_{i_abs}")
+                rec_date = metadata.get("date", date_str)
+                batch_messages.append(messages)
+                batch_meta.append((user_id, rec_date))
+
+            if not batch_messages:
                 continue
 
-            # Extract metadata
-            metadata = record.get("metadata", {})
-            user_id = metadata.get("user_id", f"user_{i}")
-            rec_date = metadata.get("date", date_str)
-
-            # Generate
-            raw_output = generate_response(
-                model, tokenizer, messages, max_new_tokens
+            # Batch generate
+            raw_outputs = generate_responses_batch(
+                model, tokenizer, batch_messages, max_new_tokens
             )
 
-            # Parse into structured format
-            parsed = parser(user_id, rec_date, raw_output)
-            if parsed is None:
-                parse_failures += 1
-                parsed = {
-                    "user_id": user_id,
-                    "date": rec_date,
-                    "layer": layer,
-                    "_raw": raw_output,
-                    "_parse_error": True,
-                }
-
-            out_f.write(json.dumps(parsed, ensure_ascii=False) + "\n")
+            # Parse and write
+            for (user_id, rec_date), raw_output in zip(batch_meta, raw_outputs):
+                parsed = parser(user_id, rec_date, raw_output)
+                if parsed is None:
+                    parse_failures += 1
+                    parsed = {
+                        "user_id": user_id,
+                        "date": rec_date,
+                        "layer": layer,
+                        "_raw": raw_output,
+                        "_parse_error": True,
+                    }
+                out_f.write(json.dumps(parsed, ensure_ascii=False) + "\n")
 
     print(f"[Worker {worker_id}] ✓ Written {output_path} (parse failures: {parse_failures}/{len(records)})")
 
@@ -326,6 +368,7 @@ def main():
     parser.add_argument("--date-str", default=None, help="Date string for output folder (YYYYMMDD). Auto-detected from data if omitted.")
     parser.add_argument("--max-new-tokens", type=int, default=2048, help="Max new tokens to generate")
     parser.add_argument("--max-samples", type=int, default=0, help="Limit number of samples per worker (0=all)")
+    parser.add_argument("--batch-size", type=int, default=8, help="Batch size for inference (default: 8)")
     parser.add_argument("--trust-remote-code", action="store_true", help="Trust remote code for model loading")
     parser.add_argument("--sample", type=int, default=0, help="Run N samples in debug mode (print full input/output)")
     parser.add_argument("--num-gpus", type=int, default=1, help="Number of GPUs for data parallel inference")
@@ -359,6 +402,7 @@ def main():
             max_samples=args.max_samples,
             worker_id=gpu_id,
             num_workers=num_workers,
+            batch_size=args.batch_size,
         )
         print(f"[Worker {gpu_id}/{num_workers}] Done.")
 
