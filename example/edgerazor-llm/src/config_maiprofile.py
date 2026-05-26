@@ -56,8 +56,8 @@ class EdgeRazorTrainConfigForMaiProfile:
     do_eval       = False
 
     # Training environment
-    per_device_bs  = 4        # larger seq_len → smaller batch
-    grad_acc_steps = 16
+    per_device_bs  = 2        # KD requires teacher+student logits in memory
+    grad_acc_steps = 32       # effective bs = 2*32*8 = 512
     grad_chkpt     = True     # gradient_checkpointing
     save_strategy  = "steps"
     save_steps     = 500
