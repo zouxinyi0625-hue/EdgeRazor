@@ -239,6 +239,75 @@ def run_inference(
     print(f"[Worker {worker_id}] ✓ Written {output_path} (parse failures: {parse_failures}/{len(records)})")
 
 
+def run_sample(args):
+    """Run a few samples and print full input/output for debugging."""
+    data_dir = Path(args.data_dir)
+    layer = args.layer
+
+    # Find data file
+    filename = f"curation_data_{layer}_test.jsonl"
+    filepath = data_dir / filename
+    if not filepath.exists():
+        filename = f"curation_data_{layer}_50k.jsonl"
+        filepath = data_dir / filename
+    if not filepath.exists():
+        print(f"[ERROR] No data file found for {layer} in {data_dir}")
+        return
+
+    records = read_curation_data(str(filepath))[:args.sample]
+    print(f"Loading model from {args.model_path}...")
+    model, tokenizer = load_model(args.model_path, args.trust_remote_code)
+    print(f"Model loaded. Running {len(records)} samples.\n")
+
+    parser_fn = LAYER_PARSERS[layer]
+
+    for i, record in enumerate(records):
+        messages = extract_prompt_messages(record)
+        if not messages:
+            continue
+
+        metadata = record.get("metadata", {})
+        user_id = metadata.get("user_id", f"user_{i}")
+        date = metadata.get("date", "unknown")
+
+        # Ground truth
+        gt = record.get("messages", [])[-1].get("content", "") if record.get("messages") else ""
+
+        print(f"{'='*80}")
+        print(f"[Sample {i+1}/{len(records)}] user_id={user_id}, date={date}")
+        print(f"{'='*80}")
+
+        # Print input messages
+        print("\n--- INPUT MESSAGES ---")
+        for msg in messages:
+            role = msg["role"]
+            content = msg["content"]
+            if len(content) > 500:
+                content = content[:500] + f"... ({len(content)} chars total)"
+            print(f"[{role}]: {content}\n")
+
+        # Generate
+        raw_output = generate_response(model, tokenizer, messages, args.max_new_tokens)
+
+        print("--- MODEL OUTPUT (raw) ---")
+        print(raw_output)
+        print()
+
+        # Parse
+        parsed = parser_fn(user_id, date, raw_output)
+        print("--- PARSED ---")
+        if parsed:
+            print(json.dumps(parsed, ensure_ascii=False, indent=2)[:2000])
+        else:
+            print("[PARSE FAILED]")
+
+        print("\n--- GROUND TRUTH ---")
+        if len(gt) > 1000:
+            gt = gt[:1000] + f"... ({len(gt)} chars total)"
+        print(gt)
+        print()
+
+
 def main():
     parser = argparse.ArgumentParser(description="MaiProfile inference with quantized model")
     parser.add_argument("--model-path", required=True, help="Path to quantized model checkpoint")
@@ -251,12 +320,15 @@ def main():
     parser.add_argument("--date-str", default=None, help="Date string for output folder (YYYYMMDD). Auto-detected from data if omitted.")
     parser.add_argument("--max-new-tokens", type=int, default=2048, help="Max new tokens to generate")
     parser.add_argument("--trust-remote-code", action="store_true", help="Trust remote code for model loading")
+    parser.add_argument("--sample", type=int, default=0, help="Run N samples in debug mode (print full input/output)")
     parser.add_argument("--num-gpus", type=int, default=1, help="Number of GPUs for data parallel inference")
     parser.add_argument("--gpu-id", type=int, default=None, help="(Internal) GPU worker ID, used by multi-GPU launcher")
     parser.add_argument("--num-workers", type=int, default=None, help="(Internal) Total workers, used by multi-GPU launcher")
     args = parser.parse_args()
 
-    if args.num_gpus > 1 and args.gpu_id is None:
+    if args.sample > 0:
+        run_sample(args)
+    elif args.num_gpus > 1 and args.gpu_id is None:
         # Launcher mode: spawn one process per GPU
         launch_multi_gpu(args)
     else:
