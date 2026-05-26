@@ -19,7 +19,8 @@ def safe_json_loads(text: str) -> dict | list | None:
         return json.loads(text)
     except json.JSONDecodeError:
         # Try closing brackets
-        for suffix in ["}", "]}", "]}"):
+        closers = ["}", "]}", "]"]
+        for suffix in closers:
             try:
                 return json.loads(text + suffix)
             except json.JSONDecodeError:
