@@ -2,7 +2,7 @@
 import os
 
 # Environment paths
-PATH_PREFIX = "/scratch/azureml/cr/j/ec2ababe2e7140d4b2703f49a4839996/exe/wd"
+PATH_PREFIX = "/scratch/azureml/cr/j/ca4c1a241a09470a950b55e21b068fbf/exe/wd"
 CODE_ROOT = f"{PATH_PREFIX}/EdgeRazor"
 SRC_ROOT = f"{CODE_ROOT}/example/edgerazor-llm/src"
 DATA_ROOT = f"{CODE_ROOT}/data/maiprofile"
@@ -29,8 +29,9 @@ class EdgeRazorTrainConfigForMaiProfile:
 
     # Default: train on layer specified by LAYER env var, fallback to layer0_signal
     _layer = os.environ.get("LAYER", "layer0_signal")
+    _quant_config = os.environ.get("QUANT_CONFIG", "")
     dataset_path  = [_all_datasets[_layer]]
-    output_dir    = f"{CODE_ROOT}/train_maiprofile/{_layer}"
+    output_dir    = f"{CODE_ROOT}/train_maiprofile/{_layer}_{_quant_config}" if _quant_config else f"{CODE_ROOT}/train_maiprofile/{_layer}"
     final_model   = f"{output_dir}/final_model"
 
     # Data already contains system prompts — do not add another

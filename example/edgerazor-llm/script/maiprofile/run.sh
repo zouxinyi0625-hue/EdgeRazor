@@ -30,7 +30,7 @@ export TOKENIZERS_PARALLELISM=false
 # User Configuration
 # ============================================================================
 
-PATH_PREFIX="/scratch/azureml/cr/j/ec2ababe2e7140d4b2703f49a4839996/exe/wd"
+PATH_PREFIX="/scratch/azureml/cr/j/ca4c1a241a09470a950b55e21b068fbf/exe/wd"
 MODEL_NAME="Qwen/Qwen3-1.7B"
 
 # Select quantization config based on argument
@@ -59,6 +59,7 @@ case "${QUANT_ARG}" in
         ;;
 esac
 
+export QUANT_CONFIG
 TRAIN_YAML="train"
 TRAIN_VERSION="train_maiprofile"
 
