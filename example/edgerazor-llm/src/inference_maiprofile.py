@@ -44,7 +44,7 @@ def load_model(model_path: str, trust_remote_code: bool = False):
         torch_dtype=torch.bfloat16,
         device_map="auto",
         trust_remote_code=trust_remote_code,
-        attn_implementation="sdpa",
+        attn_implementation="flash_attention_2",
     )
     model.eval()
     return model, tokenizer
@@ -198,10 +198,10 @@ def run_inference(
     records = read_curation_data(str(filepath))
     parser = LAYER_PARSERS[layer]
 
-    # Shard data across workers
-    records = [r for i, r in enumerate(records) if i % num_workers == worker_id]
+    # Limit total samples first, then shard across workers
     if max_samples > 0:
         records = records[:max_samples]
+    records = [r for i, r in enumerate(records) if i % num_workers == worker_id]
     print(f"[Worker {worker_id}] Assigned {len(records)} records")
 
     # Write to shard file if multi-GPU, else directly to final
