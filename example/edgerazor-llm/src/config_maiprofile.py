@@ -16,16 +16,21 @@ class EdgeRazorTrainConfigForMaiProfile:
     ds_path       = f"{SRC_ROOT}/ds_z3_config_qwen3.json"
     teacher_path  = "Qwen/Qwen3-1.7B"
     student_path  = "Qwen/Qwen3-1.7B"
-    dataset_path  = [
-        f"{DATA_ROOT}/curation_data_layer0_signal_train.jsonl",    # ~45k samples
-        f"{DATA_ROOT}/curation_data_layer1_delta_train.jsonl",     # ~45k
-        f"{DATA_ROOT}/curation_data_layer1_actual_train.jsonl",    # ~45k
-        f"{DATA_ROOT}/curation_data_layer1_intent_train.jsonl",    # ~45k
-        f"{DATA_ROOT}/curation_data_layer2_temporal_train.jsonl",  # ~45k
-        f"{DATA_ROOT}/curation_data_layer3_persona_train.jsonl",   # ~45k
-        f"{DATA_ROOT}/curation_data_layer3_seasonality_train.jsonl", # ~45k
-    ]
-    output_dir    = f"{CODE_ROOT}/train_maiprofile"
+    # All available layer datasets — select one via LAYER env var or --layer argument
+    _all_datasets = {
+        "layer0_signal":       f"{DATA_ROOT}/curation_data_layer0_signal_train.jsonl",
+        "layer1_delta":        f"{DATA_ROOT}/curation_data_layer1_delta_train.jsonl",
+        "layer1_actual":       f"{DATA_ROOT}/curation_data_layer1_actual_train.jsonl",
+        "layer1_intent":       f"{DATA_ROOT}/curation_data_layer1_intent_train.jsonl",
+        "layer2_temporal":     f"{DATA_ROOT}/curation_data_layer2_temporal_train.jsonl",
+        "layer3_persona":      f"{DATA_ROOT}/curation_data_layer3_persona_train.jsonl",
+        "layer3_seasonality":  f"{DATA_ROOT}/curation_data_layer3_seasonality_train.jsonl",
+    }
+
+    # Default: train on layer specified by LAYER env var, fallback to layer0_signal
+    _layer = os.environ.get("LAYER", "layer0_signal")
+    dataset_path  = [_all_datasets[_layer]]
+    output_dir    = f"{CODE_ROOT}/train_maiprofile/{_layer}"
     final_model   = f"{output_dir}/final_model"
 
     # Data already contains system prompts — do not add another

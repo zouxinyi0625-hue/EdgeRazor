@@ -18,9 +18,12 @@ export NCCL_DEBUG=INFO
 export TOKENIZERS_PARALLELISM=false
 
 ################################################################################
-# EdgeRazor-QLLM MaiProfile Training Pipeline
+# EdgeRazor MaiProfile Training Pipeline
 ################################################################################
-# Usage: bash run.sh [w4|w2.79|w1.58]
+# Usage: bash run.sh [w4|w2.79|w1.58] [layer_name]
+# Example: bash run.sh w4 layer1_delta
+# Available layers: layer0_signal, layer1_delta, layer1_actual, layer1_intent,
+#                   layer2_temporal, layer3_persona, layer3_seasonality
 ################################################################################
 
 # ============================================================================
@@ -32,21 +35,23 @@ MODEL_NAME="Qwen/Qwen3-1.7B"
 
 # Select quantization config based on argument
 QUANT_ARG="${1:-w4}"
+LAYER="${2:-layer0_signal}"
+export LAYER
 case "${QUANT_ARG}" in
     "w4")
         QUANT_CONFIG="W4A8KV8"
         TRAIN_YAML_DIR="w4a8kv8"
-        RUN_NAME="maiprofile_qwen3-1.7b_w4a8kv8"
+        RUN_NAME="maiprofile_${LAYER}_qwen3-1.7b_w4a8kv8"
         ;;
     "w2.79")
         QUANT_CONFIG="W2.79A8KV8"
         TRAIN_YAML_DIR="w2.79a8kv8"
-        RUN_NAME="maiprofile_qwen3-1.7b_w2.79a8kv8"
+        RUN_NAME="maiprofile_${LAYER}_qwen3-1.7b_w2.79a8kv8"
         ;;
     "w1.58")
         QUANT_CONFIG="W1.58A8KV8"
         TRAIN_YAML_DIR="w1.58a8kv8"
-        RUN_NAME="maiprofile_qwen3-1.7b_w1.58a8kv8"
+        RUN_NAME="maiprofile_${LAYER}_qwen3-1.7b_w1.58a8kv8"
         ;;
     *)
         echo "Usage: bash run.sh [w4|w2.79|w1.58]"
@@ -70,7 +75,7 @@ TEMPLATE_ROOT="${CODE_ROOT}/example/edgerazor-llm/template"
 TEMPLATE_NAME="${MODEL_NAME}-${QUANT_CONFIG}-Template"
 TEMPLATE_PATH="${TEMPLATE_ROOT}/${MODEL_NAME}/${TEMPLATE_NAME}"
 
-TRAIN_ROOT="${CODE_ROOT}/train_maiprofile"
+TRAIN_ROOT="${CODE_ROOT}/train_maiprofile/${LAYER}_${QUANT_CONFIG}"
 FINAL_MODEL="${TRAIN_ROOT}/final_model"
 EVAL_MODEL="${TRAIN_ROOT}/${MODEL_NAME}"
 
@@ -107,6 +112,7 @@ echo "EdgeRazor-QLLM MaiProfile Training Pipeline"
 echo "================================================================================"
 echo "Model:           ${MODEL_NAME}"
 echo "Quantization:    ${QUANT_CONFIG}"
+echo "Layer:           ${LAYER}"
 echo "Experiment:      ${RUN_NAME}"
 echo "Output:          ${TRAIN_ROOT}"
 echo "================================================================================"
