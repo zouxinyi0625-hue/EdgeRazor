@@ -3,7 +3,7 @@ import os
 
 # Environment paths
 PATH_PREFIX = "/path/to/your/environment"  # Change this to your actual path prefix
-CODE_ROOT = f"{PATH_PREFIX}/EdgeRazor-QLLM"
+CODE_ROOT = f"{PATH_PREFIX}/EdgeRazor"
 DATA_ROOT = f"{CODE_ROOT}/data/maiprofile"
 
 # Create necessary directories if they don't exist
