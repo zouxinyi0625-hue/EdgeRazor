@@ -26,6 +26,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from tqdm import tqdm
+
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -202,8 +204,10 @@ def run_inference(
     else:
         output_path = output_dir / f"{layer}.jsonl"
 
+    parse_failures = 0
     with open(output_path, "w", encoding="utf-8") as out_f:
-        for i, record in enumerate(records):
+        for i, record in tqdm(enumerate(records), total=len(records),
+                              desc=f"[Worker {worker_id}]", position=worker_id):
             messages = extract_prompt_messages(record)
             if not messages:
                 continue
@@ -221,7 +225,7 @@ def run_inference(
             # Parse into structured format
             parsed = parser(user_id, rec_date, raw_output)
             if parsed is None:
-                print(f"  [WARN] Failed to parse output for user {user_id}")
+                parse_failures += 1
                 parsed = {
                     "user_id": user_id,
                     "date": rec_date,
@@ -232,10 +236,7 @@ def run_inference(
 
             out_f.write(json.dumps(parsed, ensure_ascii=False) + "\n")
 
-            if (i + 1) % 50 == 0:
-                print(f"  [{i+1}/{len(records)}] done")
-
-    print(f"  ✓ Written {output_path}")
+    print(f"[Worker {worker_id}] ✓ Written {output_path} (parse failures: {parse_failures}/{len(records)})")
 
 
 def main():
