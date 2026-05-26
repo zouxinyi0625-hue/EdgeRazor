@@ -126,6 +126,8 @@ def launch_multi_gpu(args):
         ]
         if args.date_str:
             cmd.extend(["--date-str", args.date_str])
+        if args.max_samples > 0:
+            cmd.extend(["--max-samples", str(args.max_samples)])
         if args.trust_remote_code:
             cmd.append("--trust-remote-code")
         p = subprocess.Popen(cmd)
@@ -169,6 +171,7 @@ def run_inference(
     layer: str,
     date_str: str | None = None,
     max_new_tokens: int = 2048,
+    max_samples: int = 0,
     worker_id: int = 0,
     num_workers: int = 1,
 ):
@@ -197,6 +200,8 @@ def run_inference(
 
     # Shard data across workers
     records = [r for i, r in enumerate(records) if i % num_workers == worker_id]
+    if max_samples > 0:
+        records = records[:max_samples]
     print(f"[Worker {worker_id}] Assigned {len(records)} records")
 
     # Write to shard file if multi-GPU, else directly to final
@@ -320,6 +325,7 @@ def main():
                         help="Which layer to run inference on")
     parser.add_argument("--date-str", default=None, help="Date string for output folder (YYYYMMDD). Auto-detected from data if omitted.")
     parser.add_argument("--max-new-tokens", type=int, default=2048, help="Max new tokens to generate")
+    parser.add_argument("--max-samples", type=int, default=0, help="Limit number of samples per worker (0=all)")
     parser.add_argument("--trust-remote-code", action="store_true", help="Trust remote code for model loading")
     parser.add_argument("--sample", type=int, default=0, help="Run N samples in debug mode (print full input/output)")
     parser.add_argument("--num-gpus", type=int, default=1, help="Number of GPUs for data parallel inference")
@@ -350,6 +356,7 @@ def main():
             layer=args.layer,
             date_str=args.date_str,
             max_new_tokens=args.max_new_tokens,
+            max_samples=args.max_samples,
             worker_id=gpu_id,
             num_workers=num_workers,
         )
