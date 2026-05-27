@@ -125,17 +125,6 @@ async def invoke_chat(
 
     _EXTRA_RETRYABLE_CODES = {499}
 
-    if verbose_llm_logging:
-        logger.info(
-            "LLM call start. model=%s caller=%s messages_count=%d",
-            model, caller, len(messages),
-        )
-        for i, msg in enumerate(messages):
-            role = msg.get("role", "?")
-            content = msg.get("content", "")
-            preview = content[:500] if len(content) > 500 else content
-            logger.info("  msg[%d] role=%s len=%d preview:\n%s", i, role, len(content), preview)
-
     import asyncio as _asyncio
     for attempt in range(max_retries + 1):
         try:
