@@ -40,7 +40,7 @@ class EdgeRazorTrainConfigForMaiProfile4B:
 
     # Training — 4B needs smaller batch size than 1.7B
     max_seq_len   = 8192   # MaiProfile prompts can exceed 4096 tokens
-    epoch         = 5
+    epoch         = 4
     steps         = -1
     optim         = "adamw_8bit"
     lr            = 1e-5       # slightly lower lr for larger model

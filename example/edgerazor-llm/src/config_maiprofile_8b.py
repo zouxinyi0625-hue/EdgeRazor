@@ -40,7 +40,7 @@ class EdgeRazorTrainConfigForMaiProfile8B:
 
     # Training — 8B needs even smaller lr
     max_seq_len   = 8192
-    epoch         = 5
+    epoch         = 3
     steps         = -1
     optim         = "adamw_8bit"
     lr            = 5e-6
