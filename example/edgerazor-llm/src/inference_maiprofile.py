@@ -29,23 +29,29 @@ from pathlib import Path
 from tqdm import tqdm
 
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
 from maiprofile_parser import CURATION_FILE_TO_LAYER, LAYER_PARSERS
 
 
-def load_model(model_path: str, trust_remote_code: bool = False):
-    """Load quantized model and tokenizer."""
+def load_model(model_path: str, trust_remote_code: bool = False, load_in_4bit: bool = False):
+    """Load model and tokenizer. Optionally load with bitsandbytes 4-bit quantization."""
     tokenizer = AutoTokenizer.from_pretrained(
         model_path, trust_remote_code=trust_remote_code
     )
-    model = AutoModelForCausalLM.from_pretrained(
-        model_path,
+    kwargs = dict(
         torch_dtype=torch.bfloat16,
         device_map="auto",
         trust_remote_code=trust_remote_code,
         attn_implementation="flash_attention_2",
     )
+    if load_in_4bit:
+        kwargs["quantization_config"] = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_compute_dtype=torch.bfloat16,
+        )
+    model = AutoModelForCausalLM.from_pretrained(model_path, **kwargs)
     model.eval()
     return model, tokenizer
 
@@ -162,6 +168,8 @@ def launch_multi_gpu(args):
             cmd.extend(["--max-samples", str(args.max_samples)])
         if args.trust_remote_code:
             cmd.append("--trust-remote-code")
+        if args.load_in_4bit:
+            cmd.append("--load-in-4bit")
         p = subprocess.Popen(cmd)
         processes.append(p)
         print(f"[Launcher] Started worker {gpu_id} (pid={p.pid})")
@@ -304,7 +312,7 @@ def run_sample(args):
 
     records = read_curation_data(str(filepath))[:args.sample]
     print(f"Loading model from {args.model_path}...")
-    model, tokenizer = load_model(args.model_path, args.trust_remote_code)
+    model, tokenizer = load_model(args.model_path, args.trust_remote_code, args.load_in_4bit)
     print(f"Model loaded. Running {len(records)} samples.\n")
 
     parser_fn = LAYER_PARSERS[layer]
@@ -370,6 +378,7 @@ def main():
     parser.add_argument("--max-samples", type=int, default=0, help="Limit number of samples per worker (0=all)")
     parser.add_argument("--batch-size", type=int, default=8, help="Batch size for inference (default: 8)")
     parser.add_argument("--trust-remote-code", action="store_true", help="Trust remote code for model loading")
+    parser.add_argument("--load-in-4bit", action="store_true", help="Load model with bitsandbytes NF4 4-bit quantization")
     parser.add_argument("--sample", type=int, default=0, help="Run N samples in debug mode (print full input/output)")
     parser.add_argument("--num-gpus", type=int, default=1, help="Number of GPUs for data parallel inference")
     parser.add_argument("--gpu-id", type=int, default=None, help="(Internal) GPU worker ID, used by multi-GPU launcher")
@@ -388,8 +397,7 @@ def main():
         os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_id)
 
         print(f"[Worker {gpu_id}/{num_workers}] Loading model from {args.model_path}...")
-        model, tokenizer = load_model(args.model_path, args.trust_remote_code)
-        print(f"[Worker {gpu_id}/{num_workers}] Model loaded.")
+        model, tokenizer = load_model(args.model_path, args.trust_remote_code, args.load_in_4bit)
 
         run_inference(
             model=model,
