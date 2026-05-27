@@ -38,8 +38,8 @@ class EdgeRazorTrainConfigForMaiProfile:
     add_system_prompt = False
 
     # Training
-    max_seq_len   = 4096   # MaiProfile prompts are long (system prompts ~1000 tokens)
-    epoch         = 3
+    max_seq_len   = 8192   # MaiProfile prompts can exceed 4096 tokens
+    epoch         = 5
     steps         = -1
     optim         = "adamw_8bit"
     lr            = 2e-5
@@ -56,8 +56,8 @@ class EdgeRazorTrainConfigForMaiProfile:
     do_eval       = False
 
     # Training environment
-    per_device_bs  = 2        # KD requires teacher+student logits in memory
-    grad_acc_steps = 32       # effective bs = 2*32*8 = 512
+    per_device_bs  = 1        # seq_len=8192 with KD requires minimal batch
+    grad_acc_steps = 64       # effective bs = 1*64*8 = 512
     grad_chkpt     = True     # gradient_checkpointing
     save_strategy  = "steps"
     save_steps     = 500

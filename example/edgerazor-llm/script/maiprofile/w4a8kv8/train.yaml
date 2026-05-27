@@ -21,7 +21,7 @@ qat_configuration:
   training: all
 kd_configuration:
   method: KD
-  loss_task_alpha: 0.05
+  loss_task_alpha: 0.3
   loss_1:
     loss_type: logits
     loss_function: compute_kld_confidence
@@ -29,12 +29,12 @@ kd_configuration:
     temperature: 1.0
     padding_id: -100
     use_entropy: True
-    confidence_k: 16
+    confidence_k: 32
     reduction: batch_mean
   loss_2:
     loss_type: hidden_states
     loss_function: compute_mse
-    alpha: 0.5
+    alpha: 0.2
     layer_index: adaptive
     padding_id: -100
     reduction: batch_mean
