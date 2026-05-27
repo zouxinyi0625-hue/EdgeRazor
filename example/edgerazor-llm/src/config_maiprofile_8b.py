@@ -59,7 +59,7 @@ class EdgeRazorTrainConfigForMaiProfile8B:
     grad_acc_steps = 64        # effective bs = 1*64*8 = 512
     grad_chkpt     = True
     save_strategy  = "steps"
-    save_steps     = 500
+    save_steps     = 200
     eval_steps     = 500
 
     attn_implementation = "flash_attention_2"
