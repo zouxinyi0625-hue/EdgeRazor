@@ -30,8 +30,11 @@ class EdgeRazorTrainConfigForMaiProfile:
     # Default: train on layer specified by LAYER env var, fallback to layer0_signal
     _layer = os.environ.get("LAYER", "layer0_signal")
     _quant_config = os.environ.get("QUANT_CONFIG", "")
+    _run_tag = os.environ.get("RUN_TAG", "")
     dataset_path  = [_all_datasets[_layer]]
-    output_dir    = f"{CODE_ROOT}/train_maiprofile/{_layer}_{_quant_config}" if _quant_config else f"{CODE_ROOT}/train_maiprofile/{_layer}"
+    _suffix = f"{_layer}_{_quant_config}" if _quant_config else _layer
+    _suffix = f"{_suffix}_{_run_tag}" if _run_tag else _suffix
+    output_dir    = f"{CODE_ROOT}/train_maiprofile/{_suffix}"
     final_model   = f"{output_dir}/final_model"
 
     # Data already contains system prompts — do not add another

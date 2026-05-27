@@ -59,9 +59,11 @@ case "${QUANT_ARG}" in
         ;;
 esac
 
-export QUANT_CONFIG
 TRAIN_YAML="train"
 TRAIN_VERSION="train_maiprofile"
+export QUANT_CONFIG
+RUN_TAG="${3:-$(date +%Y%m%d_%H%M%S)}"
+export RUN_TAG
 
 # ============================================================================
 # Derived Paths
@@ -76,7 +78,7 @@ TEMPLATE_ROOT="${CODE_ROOT}/example/edgerazor-llm/template"
 TEMPLATE_NAME="${MODEL_NAME}-${QUANT_CONFIG}-Template"
 TEMPLATE_PATH="${TEMPLATE_ROOT}/${MODEL_NAME}/${TEMPLATE_NAME}"
 
-TRAIN_ROOT="${CODE_ROOT}/train_maiprofile/${LAYER}_${QUANT_CONFIG}"
+TRAIN_ROOT="${CODE_ROOT}/train_maiprofile/${LAYER}_${QUANT_CONFIG}_${RUN_TAG}"
 FINAL_MODEL="${TRAIN_ROOT}/final_model"
 EVAL_MODEL="${TRAIN_ROOT}/${MODEL_NAME}"
 
