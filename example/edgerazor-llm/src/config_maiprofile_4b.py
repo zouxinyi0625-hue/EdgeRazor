@@ -27,16 +27,20 @@ class EdgeRazorTrainConfigForMaiProfile4B:
     }
 
     _layer = os.environ.get("LAYER", "layer0_signal")
+    _quant_config = os.environ.get("QUANT_CONFIG", "")
+    _run_tag = os.environ.get("RUN_TAG", "")
     dataset_path  = [_all_datasets[_layer]]
-    output_dir    = f"{CODE_ROOT}/train_maiprofile_4b/{_layer}"
+    _suffix = f"{_layer}_{_quant_config}" if _quant_config else _layer
+    _suffix = f"{_suffix}_{_run_tag}" if _run_tag else _suffix
+    output_dir    = f"{CODE_ROOT}/train_maiprofile_4b/{_suffix}"
     final_model   = f"{output_dir}/final_model"
 
     # Data already contains system prompts
     add_system_prompt = False
 
     # Training — 4B needs smaller batch size than 1.7B
-    max_seq_len   = 4096
-    epoch         = 3
+    max_seq_len   = 8192   # MaiProfile prompts can exceed 4096 tokens
+    epoch         = 5
     steps         = -1
     optim         = "adamw_8bit"
     lr            = 1e-5       # slightly lower lr for larger model
@@ -51,8 +55,8 @@ class EdgeRazorTrainConfigForMaiProfile4B:
 
     do_eval       = False
 
-    per_device_bs  = 2         # 4B model needs smaller batch (vs 4 for 1.7B)
-    grad_acc_steps = 32        # compensate smaller bs: effective bs = 2*32*8 = 512
+    per_device_bs  = 1         # seq_len=8192 with KD needs minimal batch
+    grad_acc_steps = 64        # effective bs = 1*64*8 = 512
     grad_chkpt     = True
     save_strategy  = "steps"
     save_steps     = 500
