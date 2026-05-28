@@ -27,7 +27,7 @@ from edgerazor import EdgeRazor
 # Change to EdgeRazorTrainConfigForQwen3_1_7B() or EdgeRazorTrainConfigForMobileLLM_350M() for different model configurations [Auto by run.sh]
 config = EdgeRazorTrainConfigForQwen3_0_6B()
 
-if "w4a8kv8" in config.tag_name:
+if "w4a8kv8" in config.tag_name and "maiprofile" not in config.tag_name:
     config.steps = 2_000
 if "MobileLLM" in config.teacher_path:
     if "w4a8kv8" in config.tag_name:
@@ -151,6 +151,7 @@ if __name__ == "__main__":
         dataset_path=config.dataset_path,
         tokenizer=tokenizer,
         max_seq_len=config.max_seq_len,
+        add_system_prompt=getattr(config, 'add_system_prompt', True),
     )
 
     data_collator = DataCollatorForSeq2Seq(

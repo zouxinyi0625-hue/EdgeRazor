@@ -2,8 +2,8 @@
 import os
 
 # Environment paths
-PATH_PREFIX = "/path/to/your/environment"  # Change this to your actual path prefix
-CODE_ROOT = f"{PATH_PREFIX}/EdgeRazor-QLLM"
+PATH_PREFIX = "/scratch/azureml/cr/j/ec2ababe2e7140d4b2703f49a4839996/exe/wd"
+CODE_ROOT = f"{PATH_PREFIX}/EdgeRazor"
 DATA_ROOT = f"{CODE_ROOT}/data"
 
 # Create necessary directories if they don't exist
