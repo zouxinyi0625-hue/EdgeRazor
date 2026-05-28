@@ -37,15 +37,38 @@
 
 ### Results
 
-| Metric | 4B Baseline (Qwen3-4B) | 4B-2507 (FP16) | 4B QAT W4 (based on 2507) |
-|--------|:-:|:-:|:-:|
-| Valid JSON | 59/100 (59%) | 69/100 (69%) | 54/100 (54%) |
-| total_topics_scored | 229 | 372 | 320 |
-| Utility | 6.58 | 6.40 | 6.07 |
-| Precision | 8.95 | 9.27 | 9.26 |
-| Coherence | 9.32 | 9.52 | 9.60 |
-| Granularity | 0.97 | 0.97 | 0.99 |
-| Final Score | 8.63 | 8.72 | 8.72 |
+| Metric | 4B Baseline (Qwen3-4B) | 4B-2507 (FP16) | 4B QAT W4 (based on 2507) | 4B-0527 BnB NF4 (PTQ) |
+|--------|:-:|:-:|:-:|:-:|
+| Valid JSON | 59/100 (59%) | 69/100 (69%) | 54/100 (54%) | 68/100 (68%) |
+| total_topics_scored | 229 | 372 | 320 | 369 |
+| Utility | 6.58 | 6.40 | 6.07 | 6.33 |
+| Precision | 8.95 | 9.27 | 9.26 | 9.38 |
+| Coherence | 9.32 | 9.52 | 9.60 | 9.65 |
+| Granularity | 0.97 | 0.97 | 0.99 | 0.97 |
+| Final Score | 8.63 | 8.72 | 8.72 | 8.76 |
+
+---
+
+## Qwen3-4B — layer1_delta (experimental, new params)
+
+### Training Config
+- Model: `Qwen/Qwen3-4B-Instruct-2507`
+- `loss_task_alpha`: 0.3
+- Other params changed (max_seq_len etc.)
+
+### Results
+
+| Metric | 4B QAT W4 (new params) |
+|--------|:-:|
+| Valid JSON | 38/100 (38%) |
+| total_topics_scored | 157 |
+| Utility | 6.00 |
+| Precision | 9.30 |
+| Coherence | 9.65 |
+| Granularity | 0.98 |
+| Final Score | 8.69 |
+
+> Note: Valid JSON rate degraded significantly compared to α=0.05 (54%). Not a viable config.
 
 ---
 
