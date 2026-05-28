@@ -21,7 +21,7 @@ qat_configuration:
   training: all
 kd_configuration:
   method: KD
-  loss_task_alpha: 0.05
+  loss_task_alpha: 0.3
   loss_1:
     loss_type: logits
     loss_function: compute_kld_confidence

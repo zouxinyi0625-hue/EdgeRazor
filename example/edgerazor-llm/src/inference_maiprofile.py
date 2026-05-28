@@ -398,6 +398,10 @@ def main():
 
         print(f"[Worker {gpu_id}/{num_workers}] Loading model from {args.model_path}...")
         model, tokenizer = load_model(args.model_path, args.trust_remote_code, args.load_in_4bit)
+        if hasattr(model, "config") and getattr(model.config, "quantization_config", None):
+            print(f"[Worker {gpu_id}] Quantization config: {model.config.quantization_config}")
+        else:
+            print(f"[Worker {gpu_id}] No quantization detected (full precision)")
 
         run_inference(
             model=model,
