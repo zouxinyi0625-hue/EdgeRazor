@@ -62,15 +62,15 @@
 
 ### Results
 
-| Metric | 8B Baseline (FP16) | 8B QAT W4 |
-|--------|:-:|:-:|
-| Valid JSON | 64/100 (64%) | 65/100 (65%) |
-| total_topics_scored | 291 | 299 |
-| Utility | 6.27 | 6.25 |
-| Precision | 9.21 | 9.30 |
-| Coherence | 9.60 | 9.54 |
-| Granularity | 0.98 | 0.97 |
-| Final Score | 8.72 | 8.70 |
+| Metric | 8B Baseline (FP16) | 8B QAT W4 | 8B BnB NF4 (PTQ) |
+|--------|:-:|:-:|:-:|
+| Valid JSON | 64/100 (64%) | 65/100 (65%) | 66/100 (66%) |
+| total_topics_scored | 291 | 299 | 306 |
+| Utility | 6.27 | 6.25 | 6.38 |
+| Precision | 9.21 | 9.30 | 9.21 |
+| Coherence | 9.60 | 9.54 | 9.42 |
+| Granularity | 0.98 | 0.97 | 0.97 |
+| Final Score | 8.72 | 8.70 | 8.68 |
 
 ---
 
