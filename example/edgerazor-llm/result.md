@@ -49,6 +49,31 @@
 
 ---
 
+## Qwen3-8B — layer1_delta
+
+### Training Config
+- Model: `Qwen/Qwen3-8B`
+- `loss_task_alpha`: 0.05
+- `confidence_k`: 16
+- `hidden_states alpha`: 0.5
+- `epoch`: 3
+- `max_seq_len`: 4096
+- `per_device_bs`: 2, `grad_acc_steps`: 32
+
+### Results
+
+| Metric | 8B Baseline (FP16) | 8B QAT W4 |
+|--------|:-:|:-:|
+| Valid JSON | 64/100 (64%) | 65/100 (65%) |
+| total_topics_scored | 291 | 299 |
+| Utility | 6.27 | 6.25 |
+| Precision | 9.21 | 9.30 |
+| Coherence | 9.60 | 9.54 |
+| Granularity | 0.98 | 0.97 |
+| Final Score | 8.72 | 8.70 |
+
+---
+
 ## Qwen3-4B — layer1_delta (experimental, new params)
 
 ### Training Config
